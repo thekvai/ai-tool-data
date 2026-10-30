@@ -1,4 +1,4 @@
-name: Auto Tag Latest
+name: Update Live Data
 on:
   push:
     branches: [ main ]
@@ -8,14 +8,16 @@ permissions:
   contents: write
 
 jobs:
-  tag:
+  sync:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Tag and Purge
+      - name: Push to live branch and Purge
         run: |
-          TAG="v2.0.$(date +%s)"
+          # Tạo tag với số đầu lớn hẳn (v99.0.xxx) để luôn đứng đầu bảng xếp hạng jsDelivr
+          TAG="v99.0.$(date +%s)"
           git tag $TAG
           git push origin $TAG
           sleep 3
           curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/user.json"
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@latest/user.json"
