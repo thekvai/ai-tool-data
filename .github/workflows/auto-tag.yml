@@ -1,4 +1,4 @@
-name: Auto Tag and Purge jsDelivr
+name: Sync Zero Cache File
 on:
   push:
     branches: [ main ]
@@ -9,17 +9,33 @@ permissions:
   contents: write
 
 jobs:
-  tag-and-purge:
+  sync-file:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Create new dynamic tag
+        with:
+          fetch-depth: 0
+
+      - name: Create minute-stamped JSON and Tag
         run: |
-          TAG="v1.0.${{ github.run_number }}"
-          git tag $TAG
-          git push origin $TAG
-      - name: Wait and Purge jsDelivr
-        run: |
-          sleep 10
-          curl -i "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@latest/user.json"
-          curl -i "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/user.json"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Xóa các file tạm cũ để kho lưu trữ luôn gọn gàng
+          rm -f user_*.json
+          
+          # Tạo tên file theo số phút hiện tại (VD: user_29891234.json)
+          MIN=$(( $(date +%s) / 60 ))
+          cp user.json "user_${MIN}.json"
+          
+          git add -A
+          git commit -m "Auto sync user_${MIN}.json [skip ci]" || true
+          git push origin main
+          
+          # Đồng thời gắn Tag theo đúng số phút đó
+          git tag -f "v${MIN}"
+          git push origin "v${MIN}" -f
+          
+          # Xóa cache đường dẫn gốc
+          sleep 3
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/user.json"
