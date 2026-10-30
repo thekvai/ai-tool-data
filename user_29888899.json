@@ -23,5 +23,10 @@
     "username": "user05",
     "password": "123456",
     "date": "15/05/2027"
+  },
+  {
+    "username": "user06",
+    "password": "123456",
+    "date": "15/05/2027"
   }
 ]
