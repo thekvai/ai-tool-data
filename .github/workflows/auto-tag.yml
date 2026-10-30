@@ -1,22 +1,26 @@
-name: Update Live Data
+name: Purge jsDelivr Immediately
 on:
   push:
     branches: [ main ]
     paths: [ 'user.json' ]
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  sync:
+  purge:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Push to live branch and Purge
+      - name: Update Rolling Tag and Purge
         run: |
-          TAG="v99999999.0.$(date +%s)"
-          git tag $TAG
-          git push origin $TAG
+          # Tạo tag cố định 'live' trỏ thẳng vào commit mới nhất
+          git tag -f live
+          git push origin live -f
+          
+          # Đợi 3 giây cho GitHub đồng bộ rồi gọi API Purge chính thức của jsDelivr cho cả 3 đường dẫn
           sleep 3
+          curl -X POST https://purge.jsdelivr.net/ -H "Content-Type: application/json" -d '{"path":["/gh/thekvai/ai-tool-data@main/user.json","/gh/thekvai/ai-tool-data@latest/user.json","/gh/thekvai/ai-tool-data@live/user.json"]}'
           curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/user.json"
-          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@latest/user.json"
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@live/user.json"
