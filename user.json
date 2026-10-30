@@ -9,19 +9,5 @@
     "password": "password456",
     "date": "04/09/2099"
   },
-  {
-    "username": "user03",
-    "password": "password789",
-    "date": "31/12/2099"
-  },
-  {
-    "username": "user04",
-    "password": "passwordabc",
-    "date": "04/09/2027"
-  },
-  {
-    "username": "user05",
-    "password": "passwordxyz",
-    "date": "22/01/2027"
-  }
+  
 ]
