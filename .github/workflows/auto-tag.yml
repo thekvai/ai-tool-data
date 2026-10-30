@@ -16,10 +16,10 @@ jobs:
       - name: Create new dynamic tag
         run: |
           TAG="v1.0.${{ github.run_number }}"
-          git tag $TAG
-          git push origin $TAG
-      - name: Wait and Purge jsDelivr
+          git tag -f $TAG
+          git push origin $TAG -f
+      - name: Purge jsDelivr
         run: |
-          sleep 10
-          curl -i "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@latest/user.json"
-          curl -i "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/user.json"
+          sleep 5
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/user.json"
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@latest/user.json"
