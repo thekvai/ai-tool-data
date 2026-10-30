@@ -18,8 +18,10 @@ jobs:
           TAG="v1.0.${{ github.run_number }}"
           git tag -f $TAG
           git push origin $TAG -f
-      - name: Purge jsDelivr
+      - name: Wait and Purge Directory + Files
         run: |
           sleep 5
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/"
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@latest/"
           curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/user.json"
           curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@latest/user.json"
