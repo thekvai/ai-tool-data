@@ -2,7 +2,7 @@
   "app_name": "TK AI 2026",
   "version": "1.0",
   "settings": {
-    "ratio": "9:16",
+    "ratio": "9:16 or 16:9",
     "duration": 8
   }
 }
