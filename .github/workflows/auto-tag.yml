@@ -1,0 +1,23 @@
+name: Auto Tag and Purge jsDelivr
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'user.json' ]
+
+permissions:
+  contents: write
+
+jobs:
+  tag-and-purge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create new dynamic tag
+        run: |
+          TAG="v1.0.${{ github.run_number }}"
+          git tag $TAG
+          git push origin $TAG
+      - name: Purge jsDelivr @latest
+        run: |
+          sleep 3
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@latest/user.json"
