@@ -3,6 +3,7 @@ on:
   push:
     branches: [ main ]
     paths: [ 'user.json' ]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -17,7 +18,8 @@ jobs:
           TAG="v1.0.${{ github.run_number }}"
           git tag $TAG
           git push origin $TAG
-      - name: Purge jsDelivr @latest
+      - name: Wait and Purge jsDelivr
         run: |
-          sleep 3
-          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@latest/user.json"
+          sleep 10
+          curl -i "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@latest/user.json"
+          curl -i "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/user.json"
