@@ -1,4 +1,4 @@
-name: Instant Purge and Sync jsDelivr
+name: Zero Delay Sync jsDelivr
 on:
   push:
     branches: [ main ]
@@ -15,23 +15,35 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Sync Branch and Deep Purge CDN
+      - name: Instant Window Branch and Purge
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
-          # 1. Tạo/Cập nhật nhánh phụ 'sync' trỏ thẳng vào commit mới nhất (Nhánh trên jsDelivr dễ xóa cache hơn Tag gấp 10 lần)
+          # 1. Tính số khung 5 phút hiện tại (300 giây = 5 phút)
+          NOW_SLOT=$(($(date +%s) / 300))
+          NEXT_SLOT=$((NOW_SLOT + 1))
+          NEXT2_SLOT=$((NOW_SLOT + 2))
+
+          # Tạo nhánh mới tinh cho 15 phút hiện tại (Đảm bảo 0 giây cache trên toàn cầu)
+          git checkout -B "w_${NOW_SLOT}"
+          git push origin "w_${NOW_SLOT}" -f
+
+          git checkout -B "w_${NEXT_SLOT}"
+          git push origin "w_${NEXT_SLOT}" -f
+
+          git checkout -B "w_${NEXT2_SLOT}"
+          git push origin "w_${NEXT2_SLOT}" -f
+
+          # 2. Cập nhật nhánh @sync cố định cho người dùng đăng nhập sau 15 phút
           git checkout -B sync
           git push origin sync -f
 
-          # 2. Đợi 5 giây để GitHub đồng bộ hoàn toàn dữ liệu mới
+          # 3. Đợi 5 giây rồi Purge sạch cache nhánh @sync và @main trên jsDelivr
           sleep 5
-
-          # 3. Xóa sạch cache trên cả nhánh @main và @sync bằng API Purge của jsDelivr (Không dùng Tag vì Tag bị jsDelivr khóa cứng)
-          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/user.json"
+          curl -s -X POST https://purge.jsdelivr.net/ \
+            -H "Content-Type: application/json" \
+            -d '{"path":["/gh/thekvai/ai-tool-data@sync/user.json","/gh/thekvai/ai-tool-data@main/user.json"]}'
+          
           curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@sync/user.json"
-          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data/user.json"
-
-          sleep 3
           curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/user.json"
-          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@sync/user.json"
