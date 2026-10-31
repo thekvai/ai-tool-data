@@ -5,11 +5,6 @@
     "date": "31/12/2026"
   },
   {
-    "username": "user02",
-    "password": "password456",
-    "date": "04/09/2099"
-  },
-  {
     "username": "bibiemyeu",
     "password": "123456",
     "date": "15/05/2027"
@@ -26,11 +21,6 @@
   },
   {
     "username": "thienphuc",
-    "password": "Hanmactupro68",
-    "date": "15/05/2027"
-  },
-  {
-    "username": "thienphuc1",
     "password": "Hanmactupro68",
     "date": "15/05/2027"
   }
