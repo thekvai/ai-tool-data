@@ -1,8 +1,7 @@
-name: Instant Sync jsDelivr via Auto Version
+name: Instant Purge and Sync jsDelivr
 on:
   push:
     branches: [ main ]
-    paths: [ 'user.json' ]
   workflow_dispatch:
 
 permissions:
@@ -16,20 +15,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create Sequential Version Tag
+      - name: Sync Branch and Deep Purge CDN
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
-          # Tìm số tag u_1, u_2, u_3... lớn nhất hiện tại và cộng thêm 1
-          LAST_VER=$(git tag -l "u_*" | sed 's/u_//' | sort -n | tail -1)
-          if [ -z "$LAST_VER" ]; then
-            NEXT_VER=1
-          else
-            NEXT_VER=$((LAST_VER + 1))
-          fi
+          # 1. Tạo/Cập nhật nhánh phụ 'sync' trỏ thẳng vào commit mới nhất (Nhánh trên jsDelivr dễ xóa cache hơn Tag gấp 10 lần)
+          git checkout -B sync
+          git push origin sync -f
 
-          NEW_TAG="u_${NEXT_VER}"
-          echo "Creating new tag: $NEW_TAG"
-          git tag "$NEW_TAG"
-          git push origin "$NEW_TAG"
+          # 2. Đợi 5 giây để GitHub đồng bộ hoàn toàn dữ liệu mới
+          sleep 5
+
+          # 3. Xóa sạch cache trên cả nhánh @main và @sync bằng API Purge của jsDelivr (Không dùng Tag vì Tag bị jsDelivr khóa cứng)
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/user.json"
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@sync/user.json"
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data/user.json"
+
+          sleep 3
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/user.json"
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@sync/user.json"
