@@ -1,4 +1,4 @@
-name: Auto Create Unique Tag for Instant Sync
+name: Instant Sync jsDelivr via Auto Version
 on:
   push:
     branches: [ main ]
@@ -9,22 +9,27 @@ permissions:
   contents: write
 
 jobs:
-  tag-and-purge:
+  sync:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Create Unique Timestamp Tag
+        with:
+          fetch-depth: 0
+
+      - name: Create Sequential Version Tag
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
-          # 1. Tạo một Tag hoàn toàn mới dựa trên giây hiện tại (VD: v1730352000)
-          NEW_TAG="v$(date +%s)"
+          # Tìm số tag u_1, u_2, u_3... lớn nhất hiện tại và cộng thêm 1
+          LAST_VER=$(git tag -l "u_*" | sed 's/u_//' | sort -n | tail -1)
+          if [ -z "$LAST_VER" ]; then
+            NEXT_VER=1
+          else
+            NEXT_VER=$((LAST_VER + 1))
+          fi
+
+          NEW_TAG="u_${NEXT_VER}"
+          echo "Creating new tag: $NEW_TAG"
           git tag "$NEW_TAG"
           git push origin "$NEW_TAG"
-
-          # 2. Vẫn cập nhật tag live và xóa cache nhánh main
-          git tag -f live
-          git push origin live -f
-          sleep 2
-          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/user.json"
