@@ -13,14 +13,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Update Rolling Tag and Purge
+      - name: Update Tag and Purge jsDelivr
         run: |
-          # Tạo tag cố định 'live' trỏ thẳng vào commit mới nhất
+          # 1. Cập nhật tag live và tạo thêm tag theo timestamp để phá cache tuyệt đối
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          
           git tag -f live
           git push origin live -f
-          
-          # Đợi 3 giây cho GitHub đồng bộ rồi gọi API Purge chính thức của jsDelivr cho cả 3 đường dẫn
-          sleep 3
-          curl -X POST https://purge.jsdelivr.net/ -H "Content-Type: application/json" -d '{"path":["/gh/thekvai/ai-tool-data@main/user.json","/gh/thekvai/ai-tool-data@latest/user.json","/gh/thekvai/ai-tool-data@live/user.json"]}'
+
+          # 2. Đợi 2 giây để GitHub cập nhật nhánh
+          sleep 2
+
+          # 3. Gọi API Purge chính thức của jsDelivr cho nhánh @main và @live
+          curl -s -X POST https://purge.jsdelivr.net/ \
+            -H "Content-Type: application/json" \
+            -d '{"path":["/gh/thekvai/ai-tool-data@main/user.json","/gh/thekvai/ai-tool-data@live/user.json","/gh/thekvai/ai-tool-data/user.json"]}'
+
           curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/user.json"
           curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@live/user.json"
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data/user.json"
