@@ -1,4 +1,4 @@
-name: Purge jsDelivr Immediately
+name: Auto Create Unique Tag for Instant Sync
 on:
   push:
     branches: [ main ]
@@ -9,27 +9,22 @@ permissions:
   contents: write
 
 jobs:
-  purge:
+  tag-and-purge:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Update Tag and Purge jsDelivr
+      - name: Create Unique Timestamp Tag
         run: |
-          # 1. Cập nhật tag live và tạo thêm tag theo timestamp để phá cache tuyệt đối
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          
+
+          # 1. Tạo một Tag hoàn toàn mới dựa trên giây hiện tại (VD: v1730352000)
+          NEW_TAG="v$(date +%s)"
+          git tag "$NEW_TAG"
+          git push origin "$NEW_TAG"
+
+          # 2. Vẫn cập nhật tag live và xóa cache nhánh main
           git tag -f live
           git push origin live -f
-
-          # 2. Đợi 2 giây để GitHub cập nhật nhánh
           sleep 2
-
-          # 3. Gọi API Purge chính thức của jsDelivr cho nhánh @main và @live
-          curl -s -X POST https://purge.jsdelivr.net/ \
-            -H "Content-Type: application/json" \
-            -d '{"path":["/gh/thekvai/ai-tool-data@main/user.json","/gh/thekvai/ai-tool-data@live/user.json","/gh/thekvai/ai-tool-data/user.json"]}'
-
           curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/user.json"
-          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@live/user.json"
-          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data/user.json"
