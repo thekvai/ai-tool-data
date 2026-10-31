@@ -1,4 +1,4 @@
-name: Zero Delay Sync jsDelivr
+name: Minute Sync jsDelivr
 on:
   push:
     branches: [ main ]
@@ -15,35 +15,27 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Instant Window Branch and Purge
+      - name: Create Minute Branches and ProdV2
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
-          # 1. Tính số khung 5 phút hiện tại (300 giây = 5 phút)
-          NOW_SLOT=$(($(date +%s) / 300))
-          NEXT_SLOT=$((NOW_SLOT + 1))
-          NEXT2_SLOT=$((NOW_SLOT + 2))
+          # 1. Lấy số phút hiện tại (chia 60 giây) và tạo nhánh cho 10 phút liên tiếp
+          NOW_MIN=$(($(date +%s) / 60))
+          for i in 0 1 2 3 4 5 6 7 8 9 10; do
+            TARGET_MIN=$((NOW_MIN + i))
+            git checkout -B "m_${TARGET_MIN}"
+            git push origin "m_${TARGET_MIN}" -f
+          done
 
-          # Tạo nhánh mới tinh cho 15 phút hiện tại (Đảm bảo 0 giây cache trên toàn cầu)
-          git checkout -B "w_${NOW_SLOT}"
-          git push origin "w_${NOW_SLOT}" -f
+          # 2. Cập nhật nhánh cố định hoàn toàn mới 'prod_v2' (Không bao giờ dùng lại @main bị kẹt 5 user nữa)
+          git checkout -B prod_v2
+          git push origin prod_v2 -f
 
-          git checkout -B "w_${NEXT_SLOT}"
-          git push origin "w_${NEXT_SLOT}" -f
-
-          git checkout -B "w_${NEXT2_SLOT}"
-          git push origin "w_${NEXT2_SLOT}" -f
-
-          # 2. Cập nhật nhánh @sync cố định cho người dùng đăng nhập sau 15 phút
-          git checkout -B sync
-          git push origin sync -f
-
-          # 3. Đợi 5 giây rồi Purge sạch cache nhánh @sync và @main trên jsDelivr
+          # 3. Đợi 5 giây rồi Purge sạch toàn bộ trên jsDelivr
           sleep 5
-          curl -s -X POST https://purge.jsdelivr.net/ \
-            -H "Content-Type: application/json" \
-            -d '{"path":["/gh/thekvai/ai-tool-data@sync/user.json","/gh/thekvai/ai-tool-data@main/user.json"]}'
-          
-          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@sync/user.json"
-          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/user.json"
+          for i in 0 1 2 3 4 5 6 7 8 9 10; do
+            TARGET_MIN=$((NOW_MIN + i))
+            curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@m_${TARGET_MIN}/user.json" > /dev/null
+          done
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@prod_v2/user.json"
