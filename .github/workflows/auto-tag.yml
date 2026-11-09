@@ -1,8 +1,9 @@
-name: Minute Sync jsDelivr
+name: Build JS and Sync jsDelivr
 
 on:
   push:
     branches: [ main ]
+    paths: [ 'user.json', '.github/workflows/auto-tag.yml' ]
   workflow_dispatch:
 
 permissions:
@@ -16,11 +17,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create Branches and Purge CDN
+      - name: Generate user.js and Sync Branches
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
+          # 1. Tự động chuyển user.json thành user.js để nạp qua thẻ <script> (Vượt 100% lỗi Failed to fetch)
+          echo -n "window.__KV_USERS__ = " > user.js
+          cat user.json >> user.js
+          echo ";" >> user.js
+
+          git add user.js
+          git commit -m "Auto generate user.js [skip ci]" || true
+          git push origin main -f
+
+          # 2. Tạo nhánh theo phút hiện tại (5 phút) và nhánh cố định prod_v2
           NOW_MIN=$(($(date +%s) / 60))
           for i in 0 1 2 3 4 5; do
             TARGET_MIN=$((NOW_MIN + i))
@@ -31,11 +42,9 @@ jobs:
           git checkout -B prod_v2
           git push origin prod_v2 -f
 
-          git tag -f live
-          git push origin live -f
-
+          # 3. Purge cache cả user.js và user.json trên jsDelivr
           sleep 4
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@prod_v2/user.js"
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/user.js"
           curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@prod_v2/user.json"
-          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@live/user.json"
           curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/user.json"
-          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data/user.json"
