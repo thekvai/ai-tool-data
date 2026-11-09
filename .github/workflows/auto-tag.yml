@@ -1,50 +1,43 @@
-name: Build JS and Sync jsDelivr
+name: Convert JSON to JS for Script Loader
 
 on:
   push:
     branches: [ main ]
-    paths: [ 'user.json', '.github/workflows/auto-tag.yml' ]
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  sync:
+  build-js:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Generate user.js and Sync Branches
+      - name: Create user.js and Push to Live Branch
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
-          # 1. Tự động chuyển user.json thành user.js để nạp qua thẻ <script> (Vượt 100% lỗi Failed to fetch)
-          echo -n "window.__KV_USERS__ = " > user.js
-          cat user.json >> user.js
-          echo ";" >> user.js
+          # Tạo file user.js từ file user.json hiện tại
+          node -e '
+            const fs = require("fs");
+            const raw = fs.readFileSync("user.json", "utf8").replace(/,\s*([\]}])/g, "$1").trim();
+            const data = JSON.parse(raw);
+            fs.writeFileSync("user.js", "window.__KV_AUTH_DATA__ = " + JSON.stringify(data) + ";\n");
+          '
 
+          # Đẩy sang nhánh live_js và cập nhật tag live
+          git checkout -B live_js
           git add user.js
-          git commit -m "Auto generate user.js [skip ci]" || true
-          git push origin main -f
+          git commit -m "Update user.js" || true
+          git push origin live_js -f
 
-          # 2. Tạo nhánh theo phút hiện tại (5 phút) và nhánh cố định prod_v2
-          NOW_MIN=$(($(date +%s) / 60))
-          for i in 0 1 2 3 4 5; do
-            TARGET_MIN=$((NOW_MIN + i))
-            git checkout -B "m_${TARGET_MIN}"
-            git push origin "m_${TARGET_MIN}" -f
-          done
+          git tag -f live
+          git push origin live -f
 
-          git checkout -B prod_v2
-          git push origin prod_v2 -f
-
-          # 3. Purge cache cả user.js và user.json trên jsDelivr
-          sleep 4
-          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@prod_v2/user.js"
-          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/user.js"
-          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@prod_v2/user.json"
-          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/user.json"
+          sleep 3
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@live_js/user.js"
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@live/user.js"
