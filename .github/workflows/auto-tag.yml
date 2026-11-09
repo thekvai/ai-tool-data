@@ -1,4 +1,5 @@
 name: Minute Sync jsDelivr
+
 on:
   push:
     branches: [ main ]
@@ -15,27 +16,26 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create Minute Branches and ProdV2
+      - name: Create Branches and Purge CDN
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
-          # 1. Lấy số phút hiện tại (chia 60 giây) và tạo nhánh cho 10 phút liên tiếp
           NOW_MIN=$(($(date +%s) / 60))
-          for i in 0 1 2 3 4 5 6 7 8 9 10; do
+          for i in 0 1 2 3 4 5; do
             TARGET_MIN=$((NOW_MIN + i))
             git checkout -B "m_${TARGET_MIN}"
             git push origin "m_${TARGET_MIN}" -f
           done
 
-          # 2. Cập nhật nhánh cố định hoàn toàn mới 'prod_v2' (Không bao giờ dùng lại @main bị kẹt 5 user nữa)
           git checkout -B prod_v2
           git push origin prod_v2 -f
 
-          # 3. Đợi 5 giây rồi Purge sạch toàn bộ trên jsDelivr
-          sleep 5
-          for i in 0 1 2 3 4 5 6 7 8 9 10; do
-            TARGET_MIN=$((NOW_MIN + i))
-            curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@m_${TARGET_MIN}/user.json" > /dev/null
-          done
+          git tag -f live
+          git push origin live -f
+
+          sleep 4
           curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@prod_v2/user.json"
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@live/user.json"
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data@main/user.json"
+          curl -s "https://purge.jsdelivr.net/gh/thekvai/ai-tool-data/user.json"
