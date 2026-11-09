@@ -1,18 +1,1 @@
-window.__KV_USERS__ = [
-  {
-    "username": "thekv",
-    "password": "Hanmactupro68",
-    "date": "31/12/2026"
-  },
-  {
-    "username": "bibiemyeu",
-    "password": "123456",
-    "date": "15/05/2027"
-  },
-  {
-    "username": "tvcdn",
-    "password": "Hanmactupro68",
-    "date": "15/05/2027"
-  }
-]
-;
+window.__KV_AUTH_DATA__ = [{"username":"thekv","password":"Hanmactupro68","date":"31/12/2026"},{"username":"bibiemyeu","password":"123456","date":"15/05/2027"},{"username":"tvcdn","password":"Hanmactupro68","date":"15/05/2027"}];
